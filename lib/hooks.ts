@@ -59,3 +59,12 @@ export function useDailyPnl() {
     refetchInterval: 60_000,
   });
 }
+
+export function useHeartbeat() {
+  return useQuery<{ status: string; timestamp: string }>({
+    queryKey: ["heartbeat"],
+    queryFn: () => apiFetch<{ status: string; timestamp: string }>("health"),
+    refetchInterval: 10_000,
+    retry: 0,
+  });
+}

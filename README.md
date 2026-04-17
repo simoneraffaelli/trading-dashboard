@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SIZIX
 
-## Getting Started
+Real-time performance dashboard for an AI-powered autonomous trading bot. Built with **Next.js 16**, **Tailwind CSS v4**, and **Framer Motion** — designed as a dark, cinematic monitoring interface.
 
-First, run the development server:
+---
+
+## What It Does
+
+Connects to a FastAPI backend that runs an autonomous crypto trading system and displays:
+
+- **Live P&L** — giant animated cumulative profit/loss hero
+- **Key Stats** — balance, active positions, win rate, max drawdown
+- **Performance Metrics** — Sharpe ratio, profit factor, avg hold time, total trades
+- **Equity Curve** — interactive TradingView chart with peak/lowest/period return
+- **Active Positions** — open trades with direction, entry price, confidence, elapsed time
+- **Trade History** — closed trades with win/loss indicators, P&L, and duration
+
+All data is polled automatically (5s–60s intervals) with zero page reloads.
+
+---
+
+## Tech Stack
+
+| Layer     | Technology                    |
+| --------- | ----------------------------- |
+| Framework | Next.js 16 (App Router)       |
+| UI        | React 19 + Tailwind CSS v4    |
+| Animation | Framer Motion 12              |
+| Charts    | lightweight-charts v5         |
+| Data      | @tanstack/react-query 5       |
+| Icons     | lucide-react                  |
+| Backend   | FastAPI (Python, separate repo)|
+| Fonts     | Inter + JetBrains Mono        |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 18+**
+- The FastAPI trading bot backend running on port `8099`
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone and install
+git clone <repo-url> trading-dashboard
+cd trading-dashboard
+npm install
+
+# Configure environment
+cp .env.local.example .env.local
+# Edit .env.local:
+#   API_URL=http://localhost:8099
+#   API_KEY=your-api-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Run
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run dev          # → http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Build for Production
 
-## Learn More
+```bash
+npm run build        # Standalone output for Docker/Coolify
+npm run start        # Start production server
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/
+  layout.tsx           Root layout (fonts, providers)
+  page.tsx             Main page (assembles all sections)
+  globals.css          Design tokens + base styles
+  providers.tsx        React Query provider
+  api/[...path]/       Catch-all proxy → FastAPI backend
 
-## Deploy on Vercel
+components/
+  NavBar.tsx           Sticky nav: brand, uptime, LIVE/PAPER pill
+  HeroPnl.tsx          Giant P&L display with animated glow
+  StatsRow.tsx         4-column key metrics grid
+  MetricCards.tsx      Colored performance cards
+  EquityChart.tsx      TradingView area chart + stats
+  ActiveTrades.tsx     Open positions list
+  TradeHistory.tsx     Closed trades with win/loss indicators
+  AnimatedCounter.tsx  Spring-animated numbers
+  MeshGradient.tsx     Canvas background animation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+lib/
+  types.ts             TypeScript interfaces
+  api.ts               Fetch wrapper
+  hooks.ts             React Query hooks (polling)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Architecture
+
+The frontend never talks directly to the Python backend. All API calls go through a **server-side proxy route** (`app/api/[...path]/route.ts`) that injects the API key and forwards requests. This keeps credentials server-side and avoids CORS.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed architecture overview including data flow diagrams, component hierarchy, design system tokens, and deployment details.
+
+---
+
+## Environment Variables
+
+| Variable  | Description                        | Default                 |
+| --------- | ---------------------------------- | ----------------------- |
+| `API_URL` | FastAPI backend URL                | `http://localhost:8099` |
+| `API_KEY` | API key for backend authentication | (required)              |
+
+---
+
+## License
+
+Private project. All rights reserved.

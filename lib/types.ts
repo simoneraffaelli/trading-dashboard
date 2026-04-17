@@ -7,6 +7,7 @@ export interface Overview {
   open_positions: number;
   assets: string[];
   paper_mode: boolean;
+  bot_started_at: string | null;
   timestamp: string;
 }
 
