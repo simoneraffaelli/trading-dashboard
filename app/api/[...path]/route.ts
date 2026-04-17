@@ -3,13 +3,28 @@ import { NextRequest, NextResponse } from "next/server";
 const API_URL = process.env.API_URL ?? "http://localhost:8099";
 const API_KEY = process.env.API_KEY ?? "";
 
+const ALLOWED_PATHS = new Set([
+  "overview",
+  "trades/active",
+  "trades/history",
+  "metrics",
+  "equity-curve",
+  "daily-pnl",
+  "health",
+]);
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  const target = `${API_URL}/api/${path.join("/")}`;
-  const url = new URL(target);
+  const joined = path.join("/");
+
+  if (!ALLOWED_PATHS.has(joined)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const url = new URL(`${API_URL}/api/${joined}`);
 
   // Forward query params
   request.nextUrl.searchParams.forEach((value, key) => {

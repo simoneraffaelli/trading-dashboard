@@ -8,6 +8,7 @@ import StatsRow from "@/components/StatsRow";
 import MetricCards from "@/components/MetricCards";
 import ActiveTrades from "@/components/ActiveTrades";
 import TradeHistory from "@/components/TradeHistory";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useHeartbeat } from "@/lib/hooks";
 import { WifiOff } from "lucide-react";
 
@@ -59,6 +60,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      <ErrorBoundary>
       <motion.main
         variants={stagger}
         initial="hidden"
@@ -93,6 +95,7 @@ export default function Home() {
           </div>
         </motion.section>
       </motion.main>
+      </ErrorBoundary>
     </>
   );
 }

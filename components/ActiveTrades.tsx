@@ -59,8 +59,8 @@ function TradeRow({ trade, index }: { trade: ActiveTrade; index: number }) {
       </div>
 
       <div className="text-right">
-        <p className="font-mono text-sm font-bold text-emerald-400">
-          +${trade.size_usd.toLocaleString()}
+        <p className="font-mono text-sm font-bold text-white">
+          ${trade.size_usd.toLocaleString()}
         </p>
       </div>
     </motion.div>

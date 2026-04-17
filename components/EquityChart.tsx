@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useMemo } from "react";
-import { createChart, type IChartApi, ColorType, LineStyle, AreaSeries } from "lightweight-charts";
+import { createChart, type IChartApi, type ISeriesApi, type SeriesType, ColorType, LineStyle, AreaSeries, type UTCTimestamp } from "lightweight-charts";
 import { useEquityCurve } from "@/lib/hooks";
 
 export default function EquityChart() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const { data } = useEquityCurve();
 
   const stats = useMemo(() => {
@@ -20,6 +21,7 @@ export default function EquityChart() {
     return { peak, lowest, periodReturn };
   }, [data]);
 
+  // Create chart once
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -60,15 +62,7 @@ export default function EquityChart() {
     });
 
     chartRef.current = chart;
-
-    if (data?.curve) {
-      const seriesData = data.curve.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as number,
-        value: p.cumulative_pnl,
-      }));
-      areaSeries.setData(seriesData as any);
-      chart.timeScale().fitContent();
-    }
+    seriesRef.current = areaSeries;
 
     const resizeObserver = new ResizeObserver(() => {
       if (containerRef.current) {
@@ -83,7 +77,20 @@ export default function EquityChart() {
     return () => {
       resizeObserver.disconnect();
       chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
     };
+  }, []);
+
+  // Update data without recreating the chart
+  useEffect(() => {
+    if (!seriesRef.current || !chartRef.current || !data?.curve) return;
+    const seriesData = data.curve.map((p) => ({
+      time: Math.floor(new Date(p.timestamp).getTime() / 1000) as UTCTimestamp,
+      value: p.cumulative_pnl,
+    }));
+    seriesRef.current.setData(seriesData);
+    chartRef.current.timeScale().fitContent();
   }, [data]);
 
   return (
