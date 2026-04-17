@@ -52,8 +52,7 @@ export default function HeroPnl() {
       </div>
 
       <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-500">
-        AI-powered autonomous trading system generating consistent returns
-        through algorithmic precision.
+        AI-powered autonomous trading system trying to maximize PnL with algorithmic precision.
       </p>
     </div>
   );
