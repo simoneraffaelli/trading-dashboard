@@ -15,10 +15,8 @@ export default function EquityChart() {
     const values = data.curve.map((p) => p.cumulative_pnl);
     const peak = Math.max(...values);
     const lowest = Math.min(...values);
-    const last = values[values.length - 1];
-    const first = values[0];
-    const periodReturn = first !== 0 ? ((last - first) / Math.abs(first)) * 100 : last > 0 ? 100 : 0;
-    return { peak, lowest, periodReturn };
+    const netPnl = values[values.length - 1];
+    return { peak, lowest, netPnl };
   }, [data]);
 
   // Create chart once
@@ -126,14 +124,13 @@ export default function EquityChart() {
             </p>
           </div>
           <div className="px-5 py-3 text-right sm:px-6">
-            <p className="label">Period Return</p>
+            <p className="label">Net P&L</p>
             <p
               className={`mt-0.5 font-mono text-sm font-bold ${
-                stats.periodReturn >= 0 ? "text-emerald-400" : "text-red-400"
+                stats.netPnl >= 0 ? "text-emerald-400" : "text-red-400"
               }`}
             >
-              {stats.periodReturn >= 0 ? "+" : ""}
-              {stats.periodReturn.toFixed(1)}%
+              {stats.netPnl >= 0 ? "+" : "-"}${Math.abs(stats.netPnl).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
         </div>

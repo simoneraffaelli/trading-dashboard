@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Shield, Clock, Crosshair } from "lucide-react";
+import { Proportions, TrendingUp, TrendingDown, Scale, Clock, Crosshair, Layers2, TrendingUpDown } from "lucide-react";
 import AnimatedCounter from "./AnimatedCounter";
 import { useMetrics } from "@/lib/hooks";
 
@@ -29,7 +29,7 @@ export default function MetricCards() {
       value: data?.sharpe,
       decimals: 2,
       description: "Risk-adjusted performance",
-      icon: TrendingUp,
+      icon: Proportions,
       color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
     },
     {
@@ -37,17 +37,52 @@ export default function MetricCards() {
       value: data?.profit_factor,
       decimals: 2,
       description: "Gain vs loss ratio",
-      icon: Shield,
+      icon: Scale,
       color: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    },
+    {
+      label: "Best Trade",
+      value: data?.best_trade_usd,
+      suffix: "$",
+      decimals: 2,
+      description: "Best trade in USD",
+      icon: TrendingUp,
+      color: "bg-green-500/10 text-green-400 border-green-500/20",
+    },
+    {
+      label: "Worst Trade",
+      value: data?.worst_trade_usd,
+      suffix: "$",
+      decimals: 2,
+      description: "Worst trade in USD",
+      icon: TrendingDown,
+      color: "bg-red-500/10 text-red-400 border-red-500/20",
     },
     {
       label: "Avg Hold Time",
       value: data?.avg_hold_time_minutes,
       suffix: "m",
       decimals: 0,
-      description: "Position duration",
+      description: "Average position duration",
       icon: Clock,
       color: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    },
+    {
+      label: "Avg Trade Size",
+      value: data?.avg_trade_size_usd,
+      suffix: "$",
+      decimals: 2,
+      description: "Average position size",
+      icon: Layers2,
+      color: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    },
+    {
+      label: "Current Streak",
+      value: data?.current_streak,
+      decimals: 0,
+      description: `Current ${data?.streak_type} streak`,
+      icon: TrendingUpDown,
+      color: "bg-pink-500/10 text-pink-400 border-pink-500/20",
     },
     {
       label: "Total Trades",
@@ -58,7 +93,7 @@ export default function MetricCards() {
         : "—",
       icon: Crosshair,
       color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    },
+    }
   ];
 
   if (isLoading || !data) {

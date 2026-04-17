@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useActiveTrades } from "@/lib/hooks";
+import { TokenIcon } from '@web3icons/react/dynamic'
 import type { ActiveTrade } from "@/lib/types";
 
 function AssetIcon({ asset }: { asset: string }) {
-  const letter = asset.charAt(0);
   return (
     <div className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-500/20 bg-cyan-500/10">
-      <span className="text-sm font-bold text-cyan-400">{letter}</span>
+      <TokenIcon symbol={asset} color="cyan" variant="mono" className="h-6 w-6 text-cyan-400" />
     </div>
   );
 }
