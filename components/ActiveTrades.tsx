@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useActiveTrades } from "@/lib/hooks";
@@ -16,8 +17,15 @@ function AssetIcon({ asset }: { asset: string }) {
 
 function TradeRow({ trade, index }: { trade: ActiveTrade; index: number }) {
   const isLong = trade.direction === "LONG";
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const elapsed = Math.round(
-    (Date.now() - new Date(trade.opened_at).getTime()) / 60_000
+    (now - new Date(trade.opened_at).getTime()) / 60_000
   );
   const hours = Math.floor(elapsed / 60);
   const mins = elapsed % 60;
