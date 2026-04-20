@@ -1,15 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTradeHistory, useMetrics } from "@/lib/hooks";
+
+const PAGE_SIZE = 10;
 
 export default function TradeHistory() {
   const { data, isLoading } = useTradeHistory(50);
   const { data: metrics } = useMetrics();
+  const [page, setPage] = useState(0);
 
   const wins = metrics ? Math.round(metrics.win_rate * metrics.total_trades) : 0;
   const losses = metrics ? metrics.total_trades - wins : 0;
+
+  const totalPages = data ? Math.ceil(data.trades.length / PAGE_SIZE) : 0;
+  const paged = data ? data.trades.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : [];
 
   return (
     <div className="card flex h-full flex-col overflow-hidden">
@@ -46,7 +53,7 @@ export default function TradeHistory() {
         )}
 
         {data &&
-          data.trades.map((trade, i) => {
+          paged.map((trade, i) => {
             const isWin = trade.pnl_usd > 0;
             const isLong = trade.direction === "LONG";
             return (
@@ -130,12 +137,31 @@ export default function TradeHistory() {
           })}
       </div>
 
-      {/* Footer with count */}
+      {/* Footer with pagination */}
       {data && (
-        <div className="border-t border-white/[0.06] px-5 py-3">
+        <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-3">
           <p className="text-xs text-slate-500">
-            Showing {data.trades.length} of {data.total}
+            {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, data.trades.length)} of {data.trades.length}
           </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="rounded p-1 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[3rem] text-center text-xs text-slate-400">
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="rounded p-1 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>
