@@ -41,7 +41,7 @@ export default function HeroPnl() {
 
         <div className="relative flex items-baseline">
           <span className="text-2xl font-black text-white/40 sm:text-4xl">
-            {isPositive ? "+" : ""}$
+            {isPositive ? "+" : "-"}$
           </span>
           <AnimatedCounter
             value={Math.abs(pnl)}

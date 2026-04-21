@@ -50,11 +50,6 @@ export default function NavBar() {
               isOnline ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {isOnline ? (
-              <Wifi className="h-3.5 w-3.5" />
-            ) : (
-              <WifiOff className="h-3.5 w-3.5" />
-            )}
             <span className="hidden sm:inline">
               {isOnline ? "Online" : "Offline"}
             </span>

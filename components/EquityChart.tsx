@@ -8,7 +8,6 @@ import { useEquityCurve } from "@/lib/hooks";
 interface VisibleStats {
   peak: number;
   lowest: number;
-  netPnl: number;
 }
 
 export default function EquityChart() {
@@ -37,7 +36,6 @@ export default function EquityChart() {
     setStats({
       peak: Math.max(...values),
       lowest: Math.min(...values),
-      netPnl: visible[visible.length - 1].value - visible[0].value,
     });
   }, []);
 
@@ -154,27 +152,17 @@ export default function EquityChart() {
 
       {/* Bottom stats row */}
       {stats && (
-        <div className="grid grid-cols-3 border-t border-white/[0.06]">
+        <div className="grid grid-cols-2 border-t border-white/[0.06]">
           <div className="border-r border-white/[0.06] px-5 py-3 sm:px-6">
             <p className="label">Peak</p>
             <p className="mt-0.5 font-mono text-sm font-bold text-white">
               ${stats.peak.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="border-r border-white/[0.06] px-5 py-3 sm:px-6">
+          <div className="px-5 py-3 sm:px-6">
             <p className="label">Lowest</p>
             <p className="mt-0.5 font-mono text-sm font-bold text-white">
               ${stats.lowest.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div className="px-5 py-3 text-right sm:px-6">
-            <p className="label">Change</p>
-            <p
-              className={`mt-0.5 font-mono text-sm font-bold ${
-                stats.netPnl >= 0 ? "text-emerald-400" : "text-red-400"
-              }`}
-            >
-              {stats.netPnl >= 0 ? "+" : "-"}${Math.abs(stats.netPnl).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </div>
         </div>
