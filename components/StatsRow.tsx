@@ -21,12 +21,6 @@ export default function StatsRow() {
       decimals: 2,
     },
     {
-      label: "Active Trades",
-      value: overview?.open_positions,
-      suffix: overview?.open_positions === 1 ? " position" : " positions",
-      decimals: 0,
-    },
-    {
       label: "Win Rate",
       value: metrics ? metrics.win_rate * 100 : undefined,
       suffix: "%",
@@ -38,6 +32,12 @@ export default function StatsRow() {
       suffix: "%",
       decimals: 2,
     },
+    {
+      label: "Total Return",
+      value: overview?.cumulative_return_pct,
+      suffix: "%",
+      decimals: 2,
+    },
   ];
 
   return (
@@ -45,7 +45,7 @@ export default function StatsRow() {
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] lg:grid-cols-4"
+      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] lg:grid-cols-5"
     >
       {stats.map((s) => (
         <motion.div

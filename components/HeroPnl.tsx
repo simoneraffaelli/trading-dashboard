@@ -18,6 +18,7 @@ export default function HeroPnl() {
   }
 
   const pnl = data.cumulative_pnl_usd;
+  const pct = data.cumulative_return_pct;
   const isPositive = pnl >= 0;
 
   return (
@@ -39,15 +40,34 @@ export default function HeroPnl() {
           }}
         />
 
-        <div className="relative flex items-baseline">
-          <span className="text-2xl font-black text-white/40 sm:text-4xl">
-            {isPositive ? "+" : "-"}$
-          </span>
-          <AnimatedCounter
-            value={Math.abs(pnl)}
-            decimals={2}
-            className="text-[clamp(3rem,10vw,7rem)] font-black leading-none tracking-[-0.04em] text-white"
-          />
+        <div className="relative flex items-baseline gap-4">
+          <div className="flex items-baseline">
+            <span className="text-2xl font-black text-white/40 sm:text-4xl">
+              {isPositive ? "+" : "-"}$
+            </span>
+            <AnimatedCounter
+              value={Math.abs(pnl)}
+              decimals={2}
+              className="text-[clamp(3rem,10vw,7rem)] font-black leading-none tracking-[-0.04em] text-white"
+            />
+          </div>
+
+          {/* Compounded return % badge — only shown once backend provides the field */}
+          {pct != null && (
+            <motion.span
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className={`self-center rounded-full px-3 py-1 font-mono text-sm font-bold sm:text-base ${
+                pct >= 0
+                  ? "bg-emerald-500/15 text-emerald-400"
+                  : "bg-red-500/15 text-red-400"
+              }`}
+            >
+              {pct >= 0 ? "+" : ""}
+              {pct.toFixed(2)}%
+            </motion.span>
+          )}
         </div>
       </div>
 

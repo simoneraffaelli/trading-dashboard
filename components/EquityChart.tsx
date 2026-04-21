@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type SeriesType, ColorType, LineStyle, AreaSeries, type UTCTimestamp } from "lightweight-charts";
-import { Scan } from "lucide-react";
+import { Scan, DollarSign, Percent } from "lucide-react";
 import { useEquityCurve } from "@/lib/hooks";
 
 interface VisibleStats {
@@ -16,6 +16,7 @@ export default function EquityChart() {
   const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const seriesDataRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const { data } = useEquityCurve();
+  const [mode, setMode] = useState<"usd" | "pct">("usd");
   const [stats, setStats] = useState<VisibleStats | null>(null);
 
   const computeVisibleStats = useCallback(() => {
@@ -103,12 +104,12 @@ export default function EquityChart() {
     };
   }, [computeVisibleStats]);
 
-  // Update data without recreating the chart
+  // Update data when either API data or display mode changes
   useEffect(() => {
     if (!seriesRef.current || !chartRef.current || !data?.curve) return;
     const mapped = data.curve.map((p) => ({
       time: Math.floor(new Date(p.timestamp).getTime() / 1000) as UTCTimestamp,
-      value: p.cumulative_pnl,
+      value: mode === "usd" ? p.cumulative_pnl : p.cumulative_return_pct,
     }));
     // lightweight-charts requires strictly ascending, unique timestamps
     // Bump duplicates by +1s each so all data points are preserved
@@ -121,7 +122,7 @@ export default function EquityChart() {
     seriesDataRef.current = mapped;
     seriesRef.current.setData(mapped);
     chartRef.current.timeScale().fitContent();
-  }, [data]);
+  }, [data, mode]);
 
   return (
     <div className="card overflow-hidden">
@@ -133,16 +134,45 @@ export default function EquityChart() {
             Growth Trajectory
           </h2>
         </div>
-        <button
-          onClick={() => {
-            chartRef.current?.timeScale().fitContent();
-            chartRef.current?.priceScale("right").applyOptions({ autoScale: true });
-          }}
-          className="rounded p-1.5 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
-          title="Fit to view"
-        >
-          <Scan className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* USD / % toggle */}
+          <div className="flex items-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
+            <button
+              onClick={() => setMode("usd")}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors ${
+                mode === "usd"
+                  ? "bg-white/[0.08] text-white"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Show dollar PnL"
+            >
+              <DollarSign className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setMode("pct")}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors ${
+                mode === "pct"
+                  ? "bg-white/[0.08] text-white"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Show compounded return %"
+            >
+              <Percent className="h-3 w-3" />
+            </button>
+          </div>
+
+          {/* Fit to view */}
+          <button
+            onClick={() => {
+              chartRef.current?.timeScale().fitContent();
+              chartRef.current?.priceScale("right").applyOptions({ autoScale: true });
+            }}
+            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+            title="Fit to view"
+          >
+            <Scan className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Chart */}
@@ -156,13 +186,17 @@ export default function EquityChart() {
           <div className="border-r border-white/[0.06] px-5 py-3 sm:px-6">
             <p className="label">Peak</p>
             <p className="mt-0.5 font-mono text-sm font-bold text-white">
-              ${stats.peak.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {mode === "usd"
+                ? `$${stats.peak.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                : `${stats.peak >= 0 ? "+" : ""}${stats.peak.toFixed(2)}%`}
             </p>
           </div>
           <div className="px-5 py-3 sm:px-6">
             <p className="label">Lowest</p>
             <p className="mt-0.5 font-mono text-sm font-bold text-white">
-              ${stats.lowest.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {mode === "usd"
+                ? `$${stats.lowest.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                : `${stats.lowest >= 0 ? "+" : ""}${stats.lowest.toFixed(2)}%`}
             </p>
           </div>
         </div>

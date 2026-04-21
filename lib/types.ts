@@ -2,6 +2,7 @@
 export interface Overview {
   balance_usd: number | null;
   cumulative_pnl_usd: number;
+  cumulative_return_pct: number;
   today_pnl_usd: number;
   total_trades: number;
   open_positions: number;
@@ -74,6 +75,7 @@ export interface Metrics {
   streak_type: "win" | "loss" | "none";
   trades_per_day: number;
   assets_traded: string[];
+  cumulative_return_pct: number;
 }
 
 // ─── Equity Curve ──────────────────────────────────────
@@ -81,6 +83,7 @@ export interface EquityPoint {
   timestamp: string;
   cumulative_pnl: number;
   trade_pnl: number;
+  cumulative_return_pct: number;
 }
 
 export interface EquityCurveResponse {
