@@ -2,21 +2,94 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle2,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+} from "lucide-react";
 import { useTradeHistory, useMetrics } from "@/lib/hooks";
 
 const PAGE_SIZE = 10;
+
+type ExportStatus = {
+  message: string;
+  tone: "neutral" | "error";
+};
+
+function getExportFilename(contentDisposition: string | null) {
+  if (!contentDisposition) {
+    return "trades.jsonl";
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return asciiMatch?.[1] ?? "trades.jsonl";
+}
 
 export default function TradeHistory() {
   const { data, isLoading } = useTradeHistory(50);
   const { data: metrics } = useMetrics();
   const [page, setPage] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<ExportStatus | null>(null);
 
   const wins = metrics ? Math.round(metrics.win_rate * metrics.total_trades) : 0;
   const losses = metrics ? metrics.total_trades - wins : 0;
 
   const totalPages = data ? Math.ceil(data.trades.length / PAGE_SIZE) : 0;
   const paged = data ? data.trades.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : [];
+
+  async function handleExport() {
+    setIsExporting(true);
+    setExportStatus(null);
+
+    try {
+      const response = await fetch("/api/trades/export", { cache: "no-store" });
+
+      if (response.status === 404) {
+        setExportStatus({
+          message: "No trades to export yet.",
+          tone: "neutral",
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Export failed with status ${response.status}`);
+      }
+
+      const fileBlob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(fileBlob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = getExportFilename(
+        response.headers.get("content-disposition")
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0);
+    } catch {
+      setExportStatus({
+        message: "Could not export trades right now.",
+        tone: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <div className="card flex h-full flex-col overflow-hidden">
@@ -28,7 +101,8 @@ export default function TradeHistory() {
             {data ? `${data.total} Trades` : "Loading..."}
           </h2>
         </div>
-        {metrics && (
+        <div className="flex items-center gap-3">
+          {metrics && (
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-xs font-semibold text-emerald-400">
               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -39,8 +113,37 @@ export default function TradeHistory() {
               {losses}
             </span>
           </div>
-        )}
+          )}
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-40"
+            title="Download raw trades file"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+
+      {exportStatus && (
+        <div
+          role={exportStatus.tone === "error" ? "alert" : "status"}
+          className={`flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-2 text-xs ${
+            exportStatus.tone === "error"
+              ? "bg-red-500/[0.06] text-red-300"
+              : "bg-white/[0.02] text-slate-400"
+          }`}
+        >
+          <span>{exportStatus.message}</span>
+          <button
+            type="button"
+            onClick={() => setExportStatus(null)}
+            className="rounded px-2 py-1 font-semibold transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Trade list */}
       <div className="flex-1 overflow-y-auto">

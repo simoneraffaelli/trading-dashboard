@@ -7,6 +7,7 @@ const ALLOWED_PATHS = new Set([
   "overview",
   "trades/active",
   "trades/history",
+  "trades/export",
   "metrics",
   "equity-curve",
   "daily-pnl",
@@ -36,6 +37,26 @@ export async function GET(
       headers: { "X-API-Key": API_KEY },
       cache: "no-store",
     });
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      const headers = new Headers();
+      for (const headerName of [
+        "content-type",
+        "content-disposition",
+        "content-length",
+      ]) {
+        const headerValue = res.headers.get(headerName);
+        if (headerValue) {
+          headers.set(headerName, headerValue);
+        }
+      }
+
+      return new NextResponse(res.body, {
+        status: res.status,
+        headers,
+      });
+    }
 
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
