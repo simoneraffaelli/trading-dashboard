@@ -178,7 +178,7 @@ export default function EquityChart() {
               chartRef.current?.timeScale().fitContent();
               chartRef.current?.priceScale("right").applyOptions({ autoScale: true });
             }}
-            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
             title="Fit to view"
           >
             <Scan className="h-4 w-4" />
