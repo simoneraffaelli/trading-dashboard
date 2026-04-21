@@ -21,9 +21,11 @@ export default function EquityChart() {
 
   const computeVisibleStats = useCallback(() => {
     const chart = chartRef.current;
-    const series = seriesRef.current;
     const allData = seriesDataRef.current;
-    if (!chart || !series || !allData.length) return;
+    if (!chart || !allData.length) {
+      setStats(null);
+      return;
+    }
 
     const logicalRange = chart.timeScale().getVisibleLogicalRange();
     if (!logicalRange) return;
@@ -106,7 +108,12 @@ export default function EquityChart() {
 
   // Update data when either API data or display mode changes
   useEffect(() => {
-    if (!seriesRef.current || !chartRef.current || !data?.curve) return;
+    if (!seriesRef.current || !chartRef.current || !data?.curve?.length) {
+      seriesDataRef.current = [];
+      setStats(null);
+      return;
+    }
+
     const mapped = data.curve.map((p) => ({
       time: Math.floor(new Date(p.timestamp).getTime() / 1000) as UTCTimestamp,
       value: mode === "usd" ? p.cumulative_pnl : p.cumulative_return_pct,
@@ -122,7 +129,11 @@ export default function EquityChart() {
     seriesDataRef.current = mapped;
     seriesRef.current.setData(mapped);
     chartRef.current.timeScale().fitContent();
-  }, [data, mode]);
+
+    // Switching USD/% changes only Y values, so the visible logical range callback
+    // may not fire. Recompute footer stats explicitly from the remapped data.
+    computeVisibleStats();
+  }, [computeVisibleStats, data, mode]);
 
   return (
     <div className="card overflow-hidden">
