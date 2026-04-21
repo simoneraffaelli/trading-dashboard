@@ -117,7 +117,7 @@ export default function TradeHistory() {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-40"
             title="Download raw trades file"
           >
             <Download className="h-3.5 w-3.5" />

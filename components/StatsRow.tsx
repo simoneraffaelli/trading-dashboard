@@ -45,7 +45,7 @@ export default function StatsRow() {
       variants={{ show: { transition: { staggerChildren: 0.06 } } }}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] lg:grid-cols-5"
+      className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] lg:grid-cols-4"
     >
       {stats.map((s) => (
         <motion.div

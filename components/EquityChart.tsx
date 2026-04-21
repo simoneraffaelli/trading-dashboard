@@ -150,7 +150,7 @@ export default function EquityChart() {
           <div className="flex items-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
             <button
               onClick={() => setMode("usd")}
-              className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center rounded px-2 py-1 text-xs font-semibold transition-colors ${
                 mode === "usd"
                   ? "bg-white/[0.08] text-white"
                   : "text-slate-500 hover:text-slate-300"
@@ -161,7 +161,7 @@ export default function EquityChart() {
             </button>
             <button
               onClick={() => setMode("pct")}
-              className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center rounded px-2 py-1 text-xs font-semibold transition-colors ${
                 mode === "pct"
                   ? "bg-white/[0.08] text-white"
                   : "text-slate-500 hover:text-slate-300"
