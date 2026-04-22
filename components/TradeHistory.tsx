@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -13,12 +13,35 @@ import {
 } from "lucide-react";
 import { useTradeHistory, useMetrics } from "@/lib/hooks";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 type ExportStatus = {
   message: string;
   tone: "neutral" | "error";
 };
+
+function formatCloseReason(reason: string) {
+  return reason
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatClosedAt(timestamp: string) {
+  return new Date(timestamp).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatTradeDuration(openedAt: string, closedAt: string) {
+  const ms = new Date(closedAt).getTime() - new Date(openedAt).getTime();
+  const minutes = Math.round(ms / 60000);
+  const hours = Math.floor(minutes / 60);
+  return hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
+}
 
 function getExportFilename(contentDisposition: string | null) {
   if (!contentDisposition) {
@@ -44,12 +67,19 @@ export default function TradeHistory() {
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState<ExportStatus | null>(null);
+  const [expandedTradeKey, setExpandedTradeKey] = useState<string | null>(null);
 
   const wins = metrics ? Math.round(metrics.win_rate * metrics.total_trades) : 0;
   const losses = metrics ? metrics.total_trades - wins : 0;
 
   const totalPages = data ? Math.ceil(data.trades.length / PAGE_SIZE) : 0;
   const paged = data ? data.trades.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : [];
+
+  function toggleTradePopover(tradeKey: string) {
+    setExpandedTradeKey((current) =>
+      current === tradeKey ? null : tradeKey
+    );
+  }
 
   async function handleExport() {
     setIsExporting(true);
@@ -159,14 +189,124 @@ export default function TradeHistory() {
           paged.map((trade, i) => {
             const isWin = trade.pnl_usd > 0;
             const isLong = trade.direction === "LONG";
+            const tradeKey = `${trade.asset}-${trade.closed_at}`;
+            const showPopoverAbove = i >= paged.length - 2;
+            const details = [
+              {
+                label: "Confidence",
+                value: `${(trade.confidence * 100).toFixed(0)}%`,
+                valueClassName: "text-cyan-400",
+              },
+              {
+                label: "Size",
+                value: `$${trade.size_usd.toLocaleString("en-US", {
+                  maximumFractionDigits: 0,
+                })}`,
+                valueClassName: "text-white",
+              },
+              {
+                label: "Reason",
+                value: formatCloseReason(trade.close_reason),
+                valueClassName: "text-slate-200",
+              },
+              {
+                label: "Closed At",
+                value: formatClosedAt(trade.closed_at),
+                valueClassName: "text-slate-200",
+              },
+            ];
+
             return (
               <motion.div
-                key={`${trade.asset}-${trade.closed_at}`}
+                key={tradeKey}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.03 }}
-                className="flex items-center justify-between border-b border-white/[0.03] px-5 py-3 transition-colors hover:bg-white/[0.02]"
+                role="button"
+                tabIndex={0}
+                aria-expanded={expandedTradeKey === tradeKey}
+                onClick={() => toggleTradePopover(tradeKey)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleTradePopover(tradeKey);
+                  }
+                }}
+                className={`relative flex cursor-pointer items-center justify-between border-b border-white/[0.03] px-5 py-3 transition-colors ${
+                  expandedTradeKey === tradeKey
+                    ? "bg-white/[0.03]"
+                    : "hover:bg-white/[0.02]"
+                }`}
               >
+                <AnimatePresence>
+                  {expandedTradeKey === tradeKey && (
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        y: showPopoverAbove ? 8 : -8,
+                        scale: 0.98,
+                      }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{
+                        opacity: 0,
+                        y: showPopoverAbove ? 6 : -6,
+                        scale: 0.98,
+                      }}
+                      transition={{
+                        duration: 0.18,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className={`absolute left-5 right-5 z-20 ${
+                        showPopoverAbove ? "bottom-full mb-2" : "top-full mt-2"
+                      }`}
+                    >
+                      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-950/95 shadow-[0_20px_60px_rgba(2,6,23,0.55)] backdrop-blur-xl">
+                        <div
+                          className={`h-px w-full bg-gradient-to-r ${
+                            isWin
+                              ? "from-emerald-400/60 via-emerald-300/20 to-transparent"
+                              : "from-red-400/60 via-red-300/20 to-transparent"
+                          }`}
+                        />
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                              Trade Details
+                            </p>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                isWin
+                                  ? "bg-emerald-500/10 text-emerald-300"
+                                  : "bg-red-500/10 text-red-300"
+                              }`}
+                            >
+                              {isWin ? "Winner" : "Loser"}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {details.map((detail) => (
+                              <div
+                                key={detail.label}
+                                className="rounded-xl border border-white/[0.05] bg-white/[0.03] px-3 py-2"
+                              >
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                  {detail.label}
+                                </p>
+                                <p
+                                  className={`mt-1 text-xs font-semibold ${detail.valueClassName}`}
+                                >
+                                  {detail.value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="flex items-center gap-3">
                   {/* Win/Loss indicator */}
                   <div
@@ -206,14 +346,7 @@ export default function TradeHistory() {
                         day: "numeric",
                       })}
                       <span className="mx-1 text-slate-700">&middot;</span>
-                      {(() => {
-                        const ms =
-                          new Date(trade.closed_at).getTime() -
-                          new Date(trade.opened_at).getTime();
-                        const m = Math.round(ms / 60000);
-                        const h = Math.floor(m / 60);
-                        return h > 0 ? `${h}h ${m % 60}m` : `${m}m`;
-                      })()}
+                      {formatTradeDuration(trade.opened_at, trade.closed_at)}
                     </p>
                   </div>
                 </div>
