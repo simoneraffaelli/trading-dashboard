@@ -126,6 +126,8 @@ export default function EquityChart() {
         mapped[i].time = (mapped[i - 1].time + 1) as UTCTimestamp;
       }
     }
+    // Add a dummy 0%/0$ point at the start so the chart always starts from the baseline
+    if (mapped.length > 0) mapped.unshift({ time: (mapped[0].time - 1) as UTCTimestamp, value: 0 });
     seriesDataRef.current = mapped;
     seriesRef.current.setData(mapped);
     chartRef.current.timeScale().fitContent();
