@@ -42,19 +42,8 @@ export default function NavBar() {
           </span>
         </div>
 
-        {/* Right: connection status + uptime + mode */}
+        {/* Right: uptime + mode */}
         <div className="flex items-center gap-4">
-          {/* Connection indicator */}
-          <span
-            className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-              isOnline ? "text-emerald-400" : "text-red-400"
-            }`}
-          >
-            <span className="hidden sm:inline">
-              {isOnline ? "Online" : "Offline"}
-            </span>
-          </span>
-
           {/* Uptime */}
           {isOnline && elapsed !== null && (
             <span className="hidden text-xs text-slate-500 sm:block">
@@ -79,7 +68,7 @@ export default function NavBar() {
                   className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
                     isLive
                       ? "animate-ping bg-emerald-400"
-                      : "animate-pulse bg-amber-400"
+                      : "animate-ping bg-amber-400"
                   }`}
                 />
                 <span
@@ -93,7 +82,7 @@ export default function NavBar() {
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-pulse rounded-full bg-red-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
               </span>
               OFFLINE
