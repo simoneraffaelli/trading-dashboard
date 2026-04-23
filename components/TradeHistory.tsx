@@ -357,14 +357,14 @@ export default function TradeHistory() {
                       isWin ? "text-emerald-400" : "text-red-400"
                     }`}
                   >
-                    {isWin ? "+" : ""}${trade.pnl_usd.toFixed(2)}
+                    {isWin ? "+" : "-"}${trade.pnl_usd.toFixed(2)}
                   </p>
                   <p
                     className={`font-mono text-[11px] ${
                       isWin ? "text-emerald-400/60" : "text-red-400/60"
                     }`}
                   >
-                    {isWin ? "+" : ""}
+                    {isWin ? "+" : "-"}
                     {(trade.pnl_pct * 100).toFixed(2)}%
                   </p>
                 </div>

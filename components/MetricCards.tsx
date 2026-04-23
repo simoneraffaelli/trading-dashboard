@@ -77,7 +77,7 @@ export default function MetricCards() {
       color: "bg-sky-500/10 text-sky-400 border-sky-500/20",
     },
     {
-      label: "Current Streak",
+      label: "Streak",
       value: data?.current_streak,
       decimals: 0,
       description: `Current ${data?.streak_type} streak`,
