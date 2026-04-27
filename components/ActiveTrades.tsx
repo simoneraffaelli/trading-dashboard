@@ -17,16 +17,22 @@ function AssetIcon({ asset }: { asset: string }) {
 
 function TradeRow({ trade, index }: { trade: ActiveTrade; index: number }) {
   const isLong = trade.direction === "LONG";
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const initialId = setTimeout(tick, 0);
+    const intervalId = setInterval(tick, 60_000);
+
+    return () => {
+      clearTimeout(initialId);
+      clearInterval(intervalId);
+    };
   }, []);
 
-  const elapsed = Math.round(
-    (now - new Date(trade.opened_at).getTime()) / 60_000
-  );
+  const elapsed = now === null
+    ? 0
+    : Math.round((now - new Date(trade.opened_at).getTime()) / 60_000);
   const hours = Math.floor(elapsed / 60);
   const mins = elapsed % 60;
 

@@ -52,8 +52,8 @@ npm install
 # Configure environment
 cp .env.local.example .env.local
 # Edit .env.local:
-#   API_URL=http://localhost:8099
-#   API_KEY=your-api-key
+#   DASHBOARD_API_BASE_URL=http://127.0.0.1:8099
+#   DASHBOARD_API_KEY=your-api-key
 ```
 
 ### Run
@@ -102,7 +102,7 @@ lib/
 
 ## Architecture
 
-The frontend never talks directly to the Python backend. All API calls go through a **server-side proxy route** (`app/api/[...path]/route.ts`) that injects the API key and forwards requests. This keeps credentials server-side and avoids CORS.
+The frontend never talks directly to the Python backend. All API calls go through a **server-side proxy route** (`app/api/[...path]/route.ts`) that forwards the full dashboard API surface, injects `X-API-Key` for protected routes, and streams upstream responses through unchanged. This keeps credentials server-side and avoids CORS.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed architecture overview including data flow diagrams, component hierarchy, design system tokens, and deployment details.
 
@@ -110,10 +110,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed architecture overview incl
 
 ## Environment Variables
 
-| Variable  | Description                        | Default                 |
-| --------- | ---------------------------------- | ----------------------- |
-| `API_URL` | FastAPI backend URL                | `http://localhost:8099` |
-| `API_KEY` | API key for backend authentication | (required)              |
+| Variable | Description | Example |
+| -------- | ----------- | ------- |
+| `DASHBOARD_API_BASE_URL` | FastAPI backend base URL without a trailing slash | `http://127.0.0.1:8099` |
+| `DASHBOARD_API_KEY` | API key for protected backend endpoints | (required except `/api/health`) |
 
 ---
 

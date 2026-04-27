@@ -30,15 +30,18 @@ This document describes the architecture of the **Trading Dashboard**, a real-ti
 │              Next.js Server (API Route Proxy)                     │
 │                                                                   │
 │    app/api/[...path]/route.ts                                     │
-│    Forwards requests to the Python backend, injecting API_KEY     │
+│    Proxies dashboard routes, adding X-API-Key when required       │
 └──────────────────────────────┬───────────────────────────────────┘
                                │  HTTP + X-API-Key header
 ┌──────────────────────────────┴───────────────────────────────────┐
 │                  FastAPI Backend (port 8099)                       │
 │                                                                   │
+│    /api/health            → unauthenticated health check          │
+│    /api/diagnostics/collectors → collector freshness diagnostics  │
 │    /api/overview          → bot state + balance + P&L             │
 │    /api/trades/active     → currently open positions              │
 │    /api/trades/history    → closed trades with pagination         │
+│    /api/trades/export     → NDJSON trade log download             │
 │    /api/metrics           → aggregated performance metrics        │
 │    /api/equity-curve      → timestamped equity points             │
 │    /api/daily-pnl         → per-day P&L breakdown                 │
@@ -98,7 +101,7 @@ trading-dashboard/
 │   └── hooks.ts                # React Query hooks with polling intervals
 │
 ├── public/                     # Static assets
-├── .env.local                  # API_URL and API_KEY (not committed)
+├── .env.local                  # DASHBOARD_API_BASE_URL and DASHBOARD_API_KEY
 ├── next.config.ts              # Next.js config (standalone output)
 ├── tsconfig.json               # TypeScript config
 ├── tailwind + postcss          # PostCSS config for Tailwind v4
@@ -114,13 +117,24 @@ trading-dashboard/
 The client never talks directly to the Python backend. All requests go through a **server-side catch-all route** at `app/api/[...path]/route.ts`:
 
 ```
-Browser → GET /api/overview → Next.js route handler → GET http://localhost:8099/api/overview (+ X-API-Key header) → JSON response
+Browser → GET /api/overview → Next.js route handler → GET ${DASHBOARD_API_BASE_URL}/api/overview (+ X-API-Key header when required) → JSON response
 ```
 
 This pattern:
 - **Hides the API key** from the client (stored only in `.env.local` server-side)
 - **Avoids CORS** issues between the frontend and backend
 - **Enables deployment** where the backend is on a private network
+
+The route handler proxies these upstream endpoints:
+- `/api/health`
+- `/api/diagnostics/collectors`
+- `/api/overview`
+- `/api/trades/active`
+- `/api/trades/history`
+- `/api/trades/export`
+- `/api/metrics`
+- `/api/equity-curve`
+- `/api/daily-pnl`
 
 ### 2. Polling via React Query
 
@@ -200,10 +214,10 @@ The visual aesthetic is dark-mode only with glass-morphism cards, animated canva
 
 ## Environment Configuration
 
-| Variable   | Required | Default                  | Description                  |
-| ---------- | -------- | ------------------------ | ---------------------------- |
-| `API_URL`  | Yes      | `http://localhost:8099`  | FastAPI backend URL          |
-| `API_KEY`  | Yes      | (empty)                  | API key sent as `X-API-Key`  |
+| Variable | Required | Example | Description |
+| -------- | -------- | ------- | ----------- |
+| `DASHBOARD_API_BASE_URL` | Yes | `http://127.0.0.1:8099` | FastAPI backend base URL without a trailing slash |
+| `DASHBOARD_API_KEY` | Required for protected routes | (empty) | API key sent as `X-API-Key` except for `/api/health` |
 
 Set in `.env.local` (gitignored). In production, set as environment variables in the deployment platform.
 

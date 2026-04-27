@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.API_URL ?? "http://localhost:8099";
-const API_KEY = process.env.API_KEY ?? "";
+export const dynamic = "force-dynamic";
 
 const ALLOWED_PATHS = new Set([
+  "diagnostics/collectors",
   "overview",
   "trades/active",
   "trades/history",
@@ -13,6 +13,62 @@ const ALLOWED_PATHS = new Set([
   "daily-pnl",
   "health",
 ]);
+
+const HOP_BY_HOP_HEADERS = new Set([
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+]);
+
+function getApiBaseUrl() {
+  const baseUrl =
+    process.env.DASHBOARD_API_BASE_URL?.trim() ?? process.env.API_URL?.trim();
+
+  if (!baseUrl) {
+    return null;
+  }
+
+  return baseUrl.replace(/\/+$/, "");
+}
+
+function getApiKey() {
+  const apiKey =
+    process.env.DASHBOARD_API_KEY?.trim() ?? process.env.API_KEY?.trim();
+
+  return apiKey || null;
+}
+
+function buildUpstreamUrl(pathname: string, searchParams: URLSearchParams) {
+  const baseUrl = getApiBaseUrl();
+
+  if (!baseUrl) {
+    return null;
+  }
+
+  const upstreamUrl = new URL(`${baseUrl}/api/${pathname}`);
+  searchParams.forEach((value, key) => {
+    upstreamUrl.searchParams.append(key, value);
+  });
+
+  return upstreamUrl;
+}
+
+function buildResponseHeaders(headers: Headers) {
+  const forwardedHeaders = new Headers();
+
+  headers.forEach((value, key) => {
+    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) {
+      forwardedHeaders.set(key, value);
+    }
+  });
+
+  return forwardedHeaders;
+}
 
 export async function GET(
   request: NextRequest,
@@ -25,41 +81,47 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const url = new URL(`${API_URL}/api/${joined}`);
+  const url = buildUpstreamUrl(joined, request.nextUrl.searchParams);
 
-  // Forward query params
-  request.nextUrl.searchParams.forEach((value, key) => {
-    url.searchParams.set(key, value);
-  });
+  if (!url) {
+    return NextResponse.json(
+      {
+        error:
+          "Missing DASHBOARD_API_BASE_URL server environment variable.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const headers = new Headers();
+
+  if (joined !== "health") {
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing DASHBOARD_API_KEY server environment variable.",
+        },
+        { status: 500 }
+      );
+    }
+
+    headers.set("X-API-Key", apiKey);
+  }
 
   try {
-    const res = await fetch(url.toString(), {
-      headers: { "X-API-Key": API_KEY },
+    const upstreamResponse = await fetch(url, {
+      headers,
       cache: "no-store",
     });
 
-    const contentType = res.headers.get("content-type") ?? "";
-    if (!contentType.includes("application/json")) {
-      const headers = new Headers();
-      for (const headerName of [
-        "content-type",
-        "content-disposition",
-        "content-length",
-      ]) {
-        const headerValue = res.headers.get(headerName);
-        if (headerValue) {
-          headers.set(headerName, headerValue);
-        }
-      }
-
-      return new NextResponse(res.body, {
-        status: res.status,
-        headers,
-      });
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return new NextResponse(upstreamResponse.body, {
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      headers: buildResponseHeaders(upstreamResponse.headers),
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to reach trading API" },

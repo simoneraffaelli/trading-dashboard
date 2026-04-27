@@ -1,25 +1,31 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity } from "lucide-react";
 import { useOverview, useHeartbeat } from "@/lib/hooks";
 import { formatUptime } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 export default function NavBar() {
   const { data } = useOverview();
-  const { isError: botOffline, failureCount } = useHeartbeat();
-  const [now, setNow] = useState(Date.now());
+  const { isError: botOffline } = useHeartbeat();
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const initialId = setTimeout(tick, 0);
+    const intervalId = setInterval(tick, 1000);
+
+    return () => {
+      clearTimeout(initialId);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const startMs = data?.bot_started_at
     ? new Date(data.bot_started_at).getTime()
     : null;
-  const elapsed = startMs ? now - startMs : null;
+  const elapsed = startMs !== null && now !== null ? now - startMs : null;
 
   const isLive = data ? !data.paper_mode : false;
   const isOnline = !botOffline;
