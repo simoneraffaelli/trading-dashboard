@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -12,12 +13,26 @@ import {
   Download,
 } from "lucide-react";
 import { useTradeHistory, useMetrics } from "@/lib/hooks";
+import type { ClosedTrade } from "@/lib/types";
 
 const PAGE_SIZE = 5;
+const POPOVER_GAP = 8;
+const POPOVER_SIDE_OFFSET = 20;
+const POPOVER_VIEWPORT_MARGIN = 12;
+const POPOVER_MIN_SPACE = 220;
 
 type ExportStatus = {
   message: string;
   tone: "neutral" | "error";
+};
+
+type PopoverPlacement = "above" | "below";
+
+type PopoverPosition = {
+  left: number;
+  width: number;
+  offset: number;
+  placement: PopoverPlacement;
 };
 
 function formatCloseReason(reason: string) {
@@ -61,6 +76,37 @@ function getExportFilename(contentDisposition: string | null) {
   return asciiMatch?.[1] ?? "trades.jsonl";
 }
 
+function getTradeKey(trade: ClosedTrade) {
+  return `${trade.asset}-${trade.closed_at}`;
+}
+
+function getTradeDetails(trade: ClosedTrade) {
+  return [
+    {
+      label: "Confidence",
+      value: `${(trade.confidence * 100).toFixed(0)}%`,
+      valueClassName: "text-cyan-400",
+    },
+    {
+      label: "Size",
+      value: `$${trade.size_usd.toLocaleString("en-US", {
+        maximumFractionDigits: 0,
+      })}`,
+      valueClassName: "text-white",
+    },
+    {
+      label: "Reason",
+      value: formatCloseReason(trade.close_reason),
+      valueClassName: "text-slate-200",
+    },
+    {
+      label: "Closed At",
+      value: formatClosedAt(trade.closed_at),
+      valueClassName: "text-slate-200",
+    },
+  ];
+}
+
 export default function TradeHistory() {
   const { data, isLoading } = useTradeHistory(50);
   const { data: metrics } = useMetrics();
@@ -68,18 +114,157 @@ export default function TradeHistory() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState<ExportStatus | null>(null);
   const [expandedTradeKey, setExpandedTradeKey] = useState<string | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition | null>(null);
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const popoverRef = useRef<HTMLDivElement | null>(null);
 
   const wins = metrics ? Math.round(metrics.win_rate * metrics.total_trades) : 0;
   const losses = metrics ? metrics.total_trades - wins : 0;
 
   const totalPages = data ? Math.ceil(data.trades.length / PAGE_SIZE) : 0;
   const paged = data ? data.trades.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : [];
+  const expandedTrade = paged.find((trade) => getTradeKey(trade) === expandedTradeKey) ?? null;
+  const expandedTradeDetails = expandedTrade ? getTradeDetails(expandedTrade) : [];
+  const expandedTradeIsWin = expandedTrade ? expandedTrade.pnl_usd > 0 : false;
+  const portalRoot = typeof document === "undefined" ? null : document.body;
+  const popoverStyle =
+    popoverPosition?.placement === "above"
+      ? {
+          left: popoverPosition.left,
+          width: popoverPosition.width,
+          bottom: popoverPosition.offset,
+        }
+      : popoverPosition
+        ? {
+            left: popoverPosition.left,
+            width: popoverPosition.width,
+            top: popoverPosition.offset,
+          }
+        : undefined;
+
+  function updatePopoverPosition(tradeKey: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const row = rowRefs.current[tradeKey];
+    if (!row) {
+      setPopoverPosition(null);
+      return;
+    }
+
+    const rect = row.getBoundingClientRect();
+    const availableWidth = Math.max(
+      window.innerWidth - POPOVER_VIEWPORT_MARGIN * 2,
+      0
+    );
+    const width = Math.min(
+      Math.max(rect.width - POPOVER_SIDE_OFFSET * 2, 0),
+      availableWidth
+    );
+    const maxLeft = Math.max(
+      POPOVER_VIEWPORT_MARGIN,
+      window.innerWidth - width - POPOVER_VIEWPORT_MARGIN
+    );
+    const left = Math.min(
+      Math.max(POPOVER_VIEWPORT_MARGIN, rect.left + POPOVER_SIDE_OFFSET),
+      maxLeft
+    );
+    const spaceAbove = rect.top - POPOVER_GAP;
+    const spaceBelow = window.innerHeight - rect.bottom - POPOVER_GAP;
+    const placement: PopoverPlacement =
+      spaceBelow >= POPOVER_MIN_SPACE || spaceBelow >= spaceAbove
+        ? "below"
+        : "above";
+
+    setPopoverPosition({
+      left,
+      width,
+      offset:
+        placement === "below"
+          ? rect.bottom + POPOVER_GAP
+          : window.innerHeight - rect.top + POPOVER_GAP,
+      placement,
+    });
+  }
 
   function toggleTradePopover(tradeKey: string) {
-    setExpandedTradeKey((current) =>
-      current === tradeKey ? null : tradeKey
-    );
+    if (expandedTradeKey === tradeKey) {
+      setExpandedTradeKey(null);
+      setPopoverPosition(null);
+      return;
+    }
+
+    setExpandedTradeKey(tradeKey);
+    updatePopoverPosition(tradeKey);
   }
+
+  useEffect(() => {
+    if (!expandedTradeKey) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
+
+      if (
+        target instanceof Element &&
+        target.closest("[data-trade-history-row='true']")
+      ) {
+        return;
+      }
+
+      setExpandedTradeKey(null);
+      setPopoverPosition(null);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setExpandedTradeKey(null);
+      setPopoverPosition(null);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [expandedTradeKey]);
+
+  useEffect(() => {
+    if (!expandedTradeKey || !expandedTrade) {
+      return;
+    }
+
+    const tradeKey = expandedTradeKey;
+
+    function syncPopoverPosition() {
+      updatePopoverPosition(tradeKey);
+    }
+
+    const frame = window.requestAnimationFrame(syncPopoverPosition);
+    window.addEventListener("resize", syncPopoverPosition);
+    window.addEventListener("scroll", syncPopoverPosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", syncPopoverPosition);
+      window.removeEventListener("scroll", syncPopoverPosition, true);
+    };
+  }, [expandedTrade, expandedTradeKey]);
 
   async function handleExport() {
     setIsExporting(true);
@@ -122,6 +307,7 @@ export default function TradeHistory() {
   }
 
   return (
+    <>
     <div className="card flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
@@ -189,35 +375,14 @@ export default function TradeHistory() {
           paged.map((trade, i) => {
             const isWin = trade.pnl_usd > 0;
             const isLong = trade.direction === "LONG";
-            const tradeKey = `${trade.asset}-${trade.closed_at}`;
-            const showPopoverAbove = i >= paged.length - 2;
-            const details = [
-              {
-                label: "Confidence",
-                value: `${(trade.confidence * 100).toFixed(0)}%`,
-                valueClassName: "text-cyan-400",
-              },
-              {
-                label: "Size",
-                value: `$${trade.size_usd.toLocaleString("en-US", {
-                  maximumFractionDigits: 0,
-                })}`,
-                valueClassName: "text-white",
-              },
-              {
-                label: "Reason",
-                value: formatCloseReason(trade.close_reason),
-                valueClassName: "text-slate-200",
-              },
-              {
-                label: "Closed At",
-                value: formatClosedAt(trade.closed_at),
-                valueClassName: "text-slate-200",
-              },
-            ];
+            const tradeKey = getTradeKey(trade);
 
             return (
               <motion.div
+                ref={(element) => {
+                  rowRefs.current[tradeKey] = element;
+                }}
+                data-trade-history-row="true"
                 key={tradeKey}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -238,75 +403,6 @@ export default function TradeHistory() {
                     : "hover:bg-white/[0.02]"
                 }`}
               >
-                <AnimatePresence>
-                  {expandedTradeKey === tradeKey && (
-                    <motion.div
-                      initial={{
-                        opacity: 0,
-                        y: showPopoverAbove ? 8 : -8,
-                        scale: 0.98,
-                      }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{
-                        opacity: 0,
-                        y: showPopoverAbove ? 6 : -6,
-                        scale: 0.98,
-                      }}
-                      transition={{
-                        duration: 0.18,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                      className={`absolute left-5 right-5 z-20 ${
-                        showPopoverAbove ? "bottom-full mb-2" : "top-full mt-2"
-                      }`}
-                    >
-                      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-950/95 shadow-[0_20px_60px_rgba(2,6,23,0.55)] backdrop-blur-xl">
-                        <div
-                          className={`h-px w-full bg-gradient-to-r ${
-                            isWin
-                              ? "from-emerald-400/60 via-emerald-300/20 to-transparent"
-                              : "from-red-400/60 via-red-300/20 to-transparent"
-                          }`}
-                        />
-                        <div className="p-3">
-                          <div className="mb-2 flex items-center justify-between gap-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                              Trade Details
-                            </p>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                isWin
-                                  ? "bg-emerald-500/10 text-emerald-300"
-                                  : "bg-red-500/10 text-red-300"
-                              }`}
-                            >
-                              {isWin ? "Winner" : "Loser"}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {details.map((detail) => (
-                              <div
-                                key={detail.label}
-                                className="rounded-xl border border-white/[0.05] bg-white/[0.03] px-3 py-2"
-                              >
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                  {detail.label}
-                                </p>
-                                <p
-                                  className={`mt-1 text-xs font-semibold ${detail.valueClassName}`}
-                                >
-                                  {detail.value}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <div className="flex items-center gap-3">
                   {/* Win/Loss indicator */}
                   <div
@@ -401,5 +497,85 @@ export default function TradeHistory() {
         </div>
       )}
     </div>
+
+    {portalRoot &&
+      createPortal(
+        <AnimatePresence>
+          {expandedTrade && popoverPosition && popoverStyle && (
+            <motion.div
+              key={getTradeKey(expandedTrade)}
+              initial={{
+                opacity: 0,
+                y: popoverPosition.placement === "above" ? 8 : -8,
+                scale: 0.98,
+              }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{
+                opacity: 0,
+                y: popoverPosition.placement === "above" ? 6 : -6,
+                scale: 0.98,
+              }}
+              transition={{
+                duration: 0.18,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="pointer-events-none fixed z-50"
+              style={popoverStyle}
+            >
+              <div
+                ref={popoverRef}
+                role="dialog"
+                aria-label="Trade details"
+                onClick={(event) => event.stopPropagation()}
+                className="pointer-events-auto overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-950/95 shadow-[0_20px_60px_rgba(2,6,23,0.55)] backdrop-blur-xl"
+              >
+                <div
+                  className={`h-px w-full bg-gradient-to-r ${
+                    expandedTradeIsWin
+                      ? "from-emerald-400/60 via-emerald-300/20 to-transparent"
+                      : "from-red-400/60 via-red-300/20 to-transparent"
+                  }`}
+                />
+                <div className="p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Trade Details
+                    </p>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        expandedTradeIsWin
+                          ? "bg-emerald-500/10 text-emerald-300"
+                          : "bg-red-500/10 text-red-300"
+                      }`}
+                    >
+                      {expandedTradeIsWin ? "Winner" : "Loser"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {expandedTradeDetails.map((detail) => (
+                      <div
+                        key={detail.label}
+                        className="rounded-xl border border-white/[0.05] bg-white/[0.03] px-3 py-2"
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          {detail.label}
+                        </p>
+                        <p
+                          className={`mt-1 text-xs font-semibold ${detail.valueClassName}`}
+                        >
+                          {detail.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        portalRoot
+      )}
+    </>
   );
 }

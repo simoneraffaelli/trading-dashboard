@@ -25,6 +25,11 @@ const HOP_BY_HOP_HEADERS = new Set([
   "upgrade",
 ]);
 
+const UNSAFE_PROXY_RESPONSE_HEADERS = new Set([
+  "content-encoding",
+  "content-length",
+]);
+
 function getApiBaseUrl() {
   const baseUrl =
     process.env.DASHBOARD_API_BASE_URL?.trim() ?? process.env.API_URL?.trim();
@@ -62,7 +67,12 @@ function buildResponseHeaders(headers: Headers) {
   const forwardedHeaders = new Headers();
 
   headers.forEach((value, key) => {
-    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) {
+    const normalizedKey = key.toLowerCase();
+
+    if (
+      !HOP_BY_HOP_HEADERS.has(normalizedKey) &&
+      !UNSAFE_PROXY_RESPONSE_HEADERS.has(normalizedKey)
+    ) {
       forwardedHeaders.set(key, value);
     }
   });
