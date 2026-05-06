@@ -255,14 +255,19 @@ export default function TradeHistory() {
       updatePopoverPosition(tradeKey);
     }
 
+    function handleScroll() {
+      setExpandedTradeKey(null);
+      setPopoverPosition(null);
+    }
+
     const frame = window.requestAnimationFrame(syncPopoverPosition);
     window.addEventListener("resize", syncPopoverPosition);
-    window.addEventListener("scroll", syncPopoverPosition, true);
+    window.addEventListener("scroll", handleScroll, true);
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", syncPopoverPosition);
-      window.removeEventListener("scroll", syncPopoverPosition, true);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [expandedTrade, expandedTradeKey]);
 
