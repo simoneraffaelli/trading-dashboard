@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import AnimatedCounter from "./AnimatedCounter";
 import { useOverview } from "@/lib/hooks";
+import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 export default function HeroPnl() {
   const { data, isLoading } = useOverview();
@@ -20,6 +21,12 @@ export default function HeroPnl() {
   const pnl = data.cumulative_pnl_usd;
   const pct = data.cumulative_return_pct;
   const isPositive = pnl >= 0;
+  const tradeCompoundedReturnPct = data.trade_compounded_return_pct;
+  const basisMeta = getReturnBasisMeta(
+    data.cumulative_return_basis,
+    data.cumulative_return_reference_balance_usd
+  );
+  const tradeProxyLabel = formatTradeProxyLabel(tradeCompoundedReturnPct);
 
   return (
     <div>
@@ -52,7 +59,7 @@ export default function HeroPnl() {
             />
           </div>
 
-          {/* Compounded return % badge — only shown once backend provides the field */}
+          {/* Basis-aware cumulative return % badge */}
           {pct != null && (
             <motion.span
               initial={{ opacity: 0, x: -8 }}
@@ -70,6 +77,23 @@ export default function HeroPnl() {
           )}
         </div>
       </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${basisMeta.toneClassName}`}
+        >
+          {basisMeta.label}
+        </span>
+        {tradeProxyLabel && (
+          <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
+            {tradeProxyLabel}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+        {basisMeta.detail}
+      </p>
 
       <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-500">
         AI-powered autonomous trading system trying to maximize PnL with algorithmic precision.

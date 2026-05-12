@@ -38,7 +38,7 @@ All data is polled automatically (5s–60s intervals) with zero page reloads.
 
 ### Prerequisites
 
-- **Node.js 18+**
+- **Node.js 20.19+** or **22.12+**
 - The FastAPI trading bot backend running on port `8099`
 
 ### Setup

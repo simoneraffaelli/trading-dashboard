@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type SeriesType, ColorType, LineStyle, AreaSeries, type UTCTimestamp } from "lightweight-charts";
 import { Scan, DollarSign, Percent } from "lucide-react";
-import { useEquityCurve } from "@/lib/hooks";
+import { useEquityCurve, useOverview } from "@/lib/hooks";
+import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 interface VisibleStats {
   peak: number;
@@ -16,8 +17,18 @@ export default function EquityChart() {
   const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const seriesDataRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const { data } = useEquityCurve();
+  const { data: overview } = useOverview();
   const [mode, setMode] = useState<"usd" | "pct">("usd");
   const [stats, setStats] = useState<VisibleStats | null>(null);
+  const returnBasisMeta = overview
+    ? getReturnBasisMeta(
+        overview.cumulative_return_basis,
+        overview.cumulative_return_reference_balance_usd
+      )
+    : null;
+  const tradeProxyLabel = formatTradeProxyLabel(
+    overview?.trade_compounded_return_pct
+  );
 
   const computeVisibleStats = useCallback(() => {
     const chart = chartRef.current;
@@ -140,12 +151,34 @@ export default function EquityChart() {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-6">
+      <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] px-5 py-4 sm:px-6">
         <div>
           <p className="label">Performance Chart</p>
           <h2 className="mt-0.5 text-base font-bold text-white">
             Growth Trajectory
           </h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+              {mode === "usd" ? "USD PnL View" : "Cumulative Return View"}
+            </span>
+            {mode === "pct" && returnBasisMeta && (
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${returnBasisMeta.toneClassName}`}
+              >
+                {returnBasisMeta.label}
+              </span>
+            )}
+            {mode === "pct" && tradeProxyLabel && (
+              <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
+                {tradeProxyLabel}
+              </span>
+            )}
+          </div>
+          {mode === "pct" && returnBasisMeta && (
+            <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-500">
+              {returnBasisMeta.detail}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {/* USD / % toggle */}
@@ -168,7 +201,7 @@ export default function EquityChart() {
                   ? "bg-white/[0.08] text-white"
                   : "text-slate-500 hover:text-slate-300"
               }`}
-              title="Show compounded return %"
+              title="Show cumulative return %"
             >
               <Percent className="h-3 w-3" />
             </button>
