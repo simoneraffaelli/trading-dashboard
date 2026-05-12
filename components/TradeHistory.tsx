@@ -121,8 +121,21 @@ export default function TradeHistory() {
   const wins = metrics ? Math.round(metrics.win_rate * metrics.total_trades) : 0;
   const losses = metrics ? metrics.total_trades - wins : 0;
 
-  const totalPages = data ? Math.ceil(data.trades.length / PAGE_SIZE) : 0;
-  const paged = data ? data.trades.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : [];
+  const totalTrades = data?.trades.length ?? 0;
+  const totalPages = totalTrades > 0 ? Math.ceil(totalTrades / PAGE_SIZE) : 1;
+  const currentPage = Math.min(page, Math.max(totalPages - 1, 0));
+  const visibleStart = totalTrades === 0 ? 0 : currentPage * PAGE_SIZE + 1;
+  const visibleEnd =
+    totalTrades === 0
+      ? 0
+      : Math.min((currentPage + 1) * PAGE_SIZE, totalTrades);
+  const showPaginationControls = totalPages > 1;
+  const paged = data
+    ? data.trades.slice(
+        currentPage * PAGE_SIZE,
+        (currentPage + 1) * PAGE_SIZE
+      )
+    : [];
   const expandedTrade = paged.find((trade) => getTradeKey(trade) === expandedTradeKey) ?? null;
   const expandedTradeDetails = expandedTrade ? getTradeDetails(expandedTrade) : [];
   const expandedTradeIsWin = expandedTrade ? expandedTrade.pnl_usd > 0 : false;
@@ -478,27 +491,33 @@ export default function TradeHistory() {
       {data && (
         <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-3">
           <p className="text-xs text-slate-500">
-            {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, data.trades.length)} of {data.trades.length}
+            {totalTrades === 0
+              ? "No trades yet"
+              : `${visibleStart}-${visibleEnd} of ${totalTrades}`}
           </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="rounded p-1 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="min-w-[3rem] text-center text-xs text-slate-400">
-              {page + 1} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="rounded p-1 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          {showPaginationControls ? (
+            <div className="flex items-center rounded-full border border-white/[0.06] bg-white/[0.02] p-1">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="min-w-[3.5rem] px-1 text-center font-mono text-xs text-slate-300">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          ) : totalTrades > 0 ? (
+            <span className="font-mono text-xs text-slate-500">1 / 1</span>
+          ) : null}
         </div>
       )}
     </div>
