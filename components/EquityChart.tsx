@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type SeriesType, ColorType, LineStyle, AreaSeries, type UTCTimestamp } from "lightweight-charts";
-import { Scan, DollarSign, Percent } from "lucide-react";
+import { Scan, DollarSign, Percent, ChevronDown } from "lucide-react";
 import { useEquityCurve, useOverview } from "@/lib/hooks";
 import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
@@ -20,11 +20,15 @@ export default function EquityChart() {
   const { data: overview } = useOverview();
   const [mode, setMode] = useState<"usd" | "pct">("usd");
   const [stats, setStats] = useState<VisibleStats | null>(null);
+  const [showReturnContext, setShowReturnContext] = useState(false);
   const returnBasisMeta = overview
     ? getReturnBasisMeta(
         overview.cumulative_return_basis,
         overview.cumulative_return_reference_balance_usd
       )
+    : null;
+  const returnBasisSummary = returnBasisMeta
+    ? `Based on ${returnBasisMeta.label.toLowerCase()}`
     : null;
   const tradeProxyLabel = formatTradeProxyLabel(
     overview?.trade_compounded_return_pct
@@ -151,40 +155,55 @@ export default function EquityChart() {
   return (
     <div className="card overflow-hidden">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] px-5 py-4 sm:px-6">
-        <div>
+      <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-5 py-4 sm:px-6">
+        <div className="min-w-0 flex-1 pr-2">
           <p className="label">Performance Chart</p>
           <h2 className="mt-0.5 text-base font-bold text-white">
             Growth Trajectory
           </h2>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-              {mode === "usd" ? "USD PnL View" : "Cumulative Return View"}
-            </span>
-            {mode === "pct" && returnBasisMeta && (
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${returnBasisMeta.toneClassName}`}
+          {mode === "pct" && returnBasisMeta && returnBasisSummary && (
+            <div className="mt-1.5 max-w-md">
+              <button
+                type="button"
+                onClick={() => setShowReturnContext((current) => !current)}
+                aria-expanded={showReturnContext}
+                aria-controls="equity-chart-return-context"
+                className="inline-flex max-w-full items-center gap-1 text-left text-[11px] font-medium text-slate-500 transition-colors hover:text-slate-200"
               >
-                {returnBasisMeta.label}
-              </span>
-            )}
-            {mode === "pct" && tradeProxyLabel && (
-              <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
-                {tradeProxyLabel}
-              </span>
-            )}
-          </div>
-          {mode === "pct" && returnBasisMeta && (
-            <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-500">
-              {returnBasisMeta.detail}
-            </p>
+                <span>{returnBasisSummary}</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${
+                    showReturnContext ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              {showReturnContext && (
+                <div
+                  id="equity-chart-return-context"
+                  className="mt-2 max-w-md rounded-2xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5"
+                >
+                  <p className="text-xs leading-relaxed text-slate-400">
+                    {returnBasisMeta.detail}
+                  </p>
+                  {tradeProxyLabel && (
+                    <p className="mt-1.5 font-mono text-xs text-slate-300">
+                      {tradeProxyLabel}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 self-start">
           {/* USD / % toggle */}
           <div className="flex items-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
             <button
-              onClick={() => setMode("usd")}
+              onClick={() => {
+                setMode("usd");
+                setShowReturnContext(false);
+              }}
               className={`flex items-center justify-center rounded px-2 py-1 text-xs font-semibold transition-colors ${
                 mode === "usd"
                   ? "bg-white/[0.08] text-white"

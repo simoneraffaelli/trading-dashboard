@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import AnimatedCounter from "./AnimatedCounter";
 import { useOverview } from "@/lib/hooks";
-import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 export default function HeroPnl() {
   const { data, isLoading } = useOverview();
@@ -21,12 +20,6 @@ export default function HeroPnl() {
   const pnl = data.cumulative_pnl_usd;
   const pct = data.cumulative_return_pct;
   const isPositive = pnl >= 0;
-  const tradeCompoundedReturnPct = data.trade_compounded_return_pct;
-  const basisMeta = getReturnBasisMeta(
-    data.cumulative_return_basis,
-    data.cumulative_return_reference_balance_usd
-  );
-  const tradeProxyLabel = formatTradeProxyLabel(tradeCompoundedReturnPct);
 
   return (
     <div>
@@ -47,7 +40,7 @@ export default function HeroPnl() {
           }}
         />
 
-        <div className="relative flex items-baseline gap-4">
+        <div className="relative flex items-center gap-3 px-1 py-1 sm:gap-4">
           <div className="flex items-baseline">
             <span className="text-2xl font-black text-white/40 sm:text-4xl">
               {isPositive ? "+" : "-"}$
@@ -59,13 +52,13 @@ export default function HeroPnl() {
             />
           </div>
 
-          {/* Basis-aware cumulative return % badge */}
+          {/* Cumulative return % badge */}
           {pct != null && (
             <motion.span
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.5 }}
-              className={`self-center rounded-full px-3 py-1 font-mono text-sm font-bold sm:text-base ${
+              className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-white/[0.08] px-3 py-1.5 font-mono text-[13px] font-bold leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:px-3.5 sm:text-sm ${
                 pct >= 0
                   ? "bg-emerald-500/15 text-emerald-400"
                   : "bg-red-500/15 text-red-400"
@@ -77,23 +70,6 @@ export default function HeroPnl() {
           )}
         </div>
       </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span
-          className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${basisMeta.toneClassName}`}
-        >
-          {basisMeta.label}
-        </span>
-        {tradeProxyLabel && (
-          <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
-            {tradeProxyLabel}
-          </span>
-        )}
-      </div>
-
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-        {basisMeta.detail}
-      </p>
 
       <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-500">
         AI-powered autonomous trading system trying to maximize PnL with algorithmic precision.
