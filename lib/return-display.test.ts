@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getReturnBasisMeta } from "./return-display";
+import {
+  formatSignedPercent,
+  formatTradeProxyLabel,
+  getReturnBasisMeta,
+} from "./return-display";
 
 describe("getReturnBasisMeta", () => {
   it("formats paper-balance return basis details with the fixed reference balance", () => {
@@ -30,5 +34,22 @@ describe("getReturnBasisMeta", () => {
       detail: "Fallback compounded trade proxy when exact account basis is unavailable",
       toneClassName: "bg-amber-500/10 text-amber-300 border-amber-500/20",
     });
+  });
+});
+
+describe("trade proxy formatting", () => {
+  it("formats signed percentages for valid numeric values", () => {
+    expect(formatSignedPercent(10)).toBe("+10.00%");
+    expect(formatSignedPercent(-3.456)).toBe("-3.46%");
+  });
+
+  it("returns null for missing or invalid trade proxy values", () => {
+    expect(formatSignedPercent(null)).toBeNull();
+    expect(formatSignedPercent(undefined)).toBeNull();
+  });
+
+  it("builds a trade proxy label only when a valid value is present", () => {
+    expect(formatTradeProxyLabel(1.25)).toBe("Trade Proxy +1.25%");
+    expect(formatTradeProxyLabel(null)).toBeNull();
   });
 });

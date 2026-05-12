@@ -6,11 +6,33 @@ export interface ReturnBasisMeta {
   toneClassName: string;
 }
 
+function isFiniteNumber(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function formatUsd(amount: number) {
   return amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+export function formatSignedPercent(value: number | null | undefined) {
+  if (!isFiniteNumber(value)) {
+    return null;
+  }
+
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+export function formatTradeProxyLabel(value: number | null | undefined) {
+  const formattedPercent = formatSignedPercent(value);
+
+  if (!formattedPercent) {
+    return null;
+  }
+
+  return `Trade Proxy ${formattedPercent}`;
 }
 
 export function getReturnBasisMeta(

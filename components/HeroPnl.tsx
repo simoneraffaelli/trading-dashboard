@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import AnimatedCounter from "./AnimatedCounter";
 import { useOverview } from "@/lib/hooks";
-import { getReturnBasisMeta } from "@/lib/return-display";
+import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 export default function HeroPnl() {
   const { data, isLoading } = useOverview();
@@ -26,6 +26,7 @@ export default function HeroPnl() {
     data.cumulative_return_basis,
     data.cumulative_return_reference_balance_usd
   );
+  const tradeProxyLabel = formatTradeProxyLabel(tradeCompoundedReturnPct);
 
   return (
     <div>
@@ -83,10 +84,11 @@ export default function HeroPnl() {
         >
           {basisMeta.label}
         </span>
-        <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
-          Trade Proxy {tradeCompoundedReturnPct >= 0 ? "+" : ""}
-          {tradeCompoundedReturnPct.toFixed(2)}%
-        </span>
+        {tradeProxyLabel && (
+          <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
+            {tradeProxyLabel}
+          </span>
+        )}
       </div>
 
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">

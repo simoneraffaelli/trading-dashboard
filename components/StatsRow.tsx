@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import AnimatedCounter from "./AnimatedCounter";
 import { useOverview, useMetrics } from "@/lib/hooks";
-import { getReturnBasisMeta } from "@/lib/return-display";
+import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 const item = {
   hidden: { opacity: 0, y: 12 },
@@ -19,6 +19,9 @@ export default function StatsRow() {
         overview.cumulative_return_reference_balance_usd
       )
     : null;
+  const tradeProxyLabel = formatTradeProxyLabel(
+    overview?.trade_compounded_return_pct
+  );
 
   const stats = [
     {
@@ -50,10 +53,7 @@ export default function StatsRow() {
       suffix: "%",
       decimals: 2,
       hint: returnBasisMeta?.label,
-      detail:
-        overview && returnBasisMeta
-          ? `Trade proxy ${overview.trade_compounded_return_pct >= 0 ? "+" : ""}${overview.trade_compounded_return_pct.toFixed(2)}%`
-          : undefined,
+      detail: overview && returnBasisMeta ? tradeProxyLabel ?? undefined : undefined,
     },
   ];
 

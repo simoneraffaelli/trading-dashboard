@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type SeriesType, ColorType, LineStyle, AreaSeries, type UTCTimestamp } from "lightweight-charts";
 import { Scan, DollarSign, Percent } from "lucide-react";
 import { useEquityCurve, useOverview } from "@/lib/hooks";
-import { getReturnBasisMeta } from "@/lib/return-display";
+import { formatTradeProxyLabel, getReturnBasisMeta } from "@/lib/return-display";
 
 interface VisibleStats {
   peak: number;
@@ -26,6 +26,9 @@ export default function EquityChart() {
         overview.cumulative_return_reference_balance_usd
       )
     : null;
+  const tradeProxyLabel = formatTradeProxyLabel(
+    overview?.trade_compounded_return_pct
+  );
 
   const computeVisibleStats = useCallback(() => {
     const chart = chartRef.current;
@@ -165,10 +168,9 @@ export default function EquityChart() {
                 {returnBasisMeta.label}
               </span>
             )}
-            {mode === "pct" && overview && (
+            {mode === "pct" && tradeProxyLabel && (
               <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 font-mono text-xs text-slate-300">
-                Trade Proxy {overview.trade_compounded_return_pct >= 0 ? "+" : ""}
-                {overview.trade_compounded_return_pct.toFixed(2)}%
+                {tradeProxyLabel}
               </span>
             )}
           </div>
