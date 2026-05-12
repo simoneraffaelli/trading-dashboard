@@ -77,6 +77,10 @@ function buildResponseHeaders(headers: Headers) {
     }
   });
 
+  forwardedHeaders.set("Cache-Control", "no-store");
+  forwardedHeaders.set("Pragma", "no-cache");
+  forwardedHeaders.set("Expires", "0");
+
   return forwardedHeaders;
 }
 

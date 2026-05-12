@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Proportions, TrendingUp, TrendingDown, Scale, Clock, Crosshair, Layers2, TrendingUpDown } from "lucide-react";
 import AnimatedCounter from "./AnimatedCounter";
 import { useMetrics } from "@/lib/hooks";
+import { getProfitFactorCardValue } from "@/lib/metric-display";
 
 const item = {
   hidden: { opacity: 0, y: 12 },
@@ -12,7 +13,8 @@ const item = {
 
 interface MetricDef {
   label: string;
-  value: number | undefined;
+  value: number | null | undefined;
+  displayValue?: string | null;
   suffix?: string;
   decimals: number;
   description: string;
@@ -22,6 +24,7 @@ interface MetricDef {
 
 export default function MetricCards() {
   const { data, isLoading } = useMetrics();
+  const profitFactor = getProfitFactorCardValue(data);
 
   const cards: MetricDef[] = [
     {
@@ -34,9 +37,15 @@ export default function MetricCards() {
     },
     {
       label: "Profit Factor",
-      value: data?.profit_factor,
+      value: profitFactor.numericValue,
+      displayValue: profitFactor.textValue,
       decimals: 2,
-      description: "Gain vs loss ratio",
+      description:
+        profitFactor.state === "unbounded"
+          ? "Profits with no realized losses"
+          : profitFactor.state === "unavailable"
+            ? "No meaningful ratio yet"
+            : "Gain vs loss ratio",
       icon: Scale,
       color: "bg-violet-500/10 text-violet-400 border-violet-500/20",
     },
@@ -132,13 +141,17 @@ export default function MetricCards() {
                 {c.label}
               </p>
               <div className="mt-1">
-                {c.value !== undefined ? (
+                {c.value !== null && c.value !== undefined ? (
                   <AnimatedCounter
                     value={c.value}
                     suffix={c.suffix}
                     decimals={c.decimals}
                     className="text-2xl font-black tracking-tight sm:text-3xl"
                   />
+                ) : c.displayValue ? (
+                  <span className="font-mono text-2xl font-black tracking-tight sm:text-3xl">
+                    {c.displayValue}
+                  </span>
                 ) : (
                   <span className="text-2xl font-black text-white/30">—</span>
                 )}

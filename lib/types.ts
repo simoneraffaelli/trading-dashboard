@@ -1,8 +1,21 @@
+export type CumulativeReturnBasis =
+  | "realized_closed_pnl_on_fixed_paper_balance"
+  | "live_total_equity_history"
+  | "trade_compounded_proxy";
+
+export type ProfitFactorState =
+  | "finite"
+  | "unbounded"
+  | "unavailable";
+
 // ─── Overview ──────────────────────────────────────────
 export interface Overview {
   balance_usd: number | null;
   cumulative_pnl_usd: number;
   cumulative_return_pct: number;
+  trade_compounded_return_pct: number;
+  cumulative_return_basis: CumulativeReturnBasis;
+  cumulative_return_reference_balance_usd: number | null;
   today_pnl_usd: number;
   total_trades: number;
   open_positions: number;
@@ -61,12 +74,18 @@ export interface Metrics {
   win_rate: number;
   long_win_rate: number;
   short_win_rate: number;
-  profit_factor: number;
+  profit_factor: number | null;
+  profit_factor_state: ProfitFactorState;
+  profit_factor_display: string;
   sharpe: number;
   max_drawdown_pct: number;
   avg_hold_time_minutes: number;
   avg_trade_size_usd: number;
   cumulative_pnl_usd: number;
+  cumulative_return_pct: number;
+  trade_compounded_return_pct: number;
+  cumulative_return_basis: CumulativeReturnBasis;
+  cumulative_return_reference_balance_usd: number | null;
   best_trade_usd: number;
   worst_trade_usd: number;
   avg_win_usd: number;
@@ -75,7 +94,6 @@ export interface Metrics {
   streak_type: "win" | "loss" | "none";
   trades_per_day: number;
   assets_traded: string[];
-  cumulative_return_pct: number;
 }
 
 // ─── Equity Curve ──────────────────────────────────────
@@ -84,6 +102,12 @@ export interface EquityPoint {
   cumulative_pnl: number;
   trade_pnl: number;
   cumulative_return_pct: number;
+  trade_compounded_return_pct: number | null;
+  balance_usd?: number | null;
+  available_balance_usd?: number | null;
+  event_reason?: string | null;
+  trade_id?: string | number | null;
+  asset?: string | null;
 }
 
 export interface EquityCurveResponse {
