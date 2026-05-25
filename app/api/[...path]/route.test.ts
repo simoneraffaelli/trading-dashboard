@@ -26,6 +26,16 @@ const endpointCases = [
     },
   },
   {
+    path: "runtime/status",
+    payload: {
+      status: "running",
+      mode: "live",
+      service: "auto-trading.service",
+      active_state: "active",
+      timestamp: "2026-05-12T12:00:00.000Z",
+    },
+  },
+  {
     path: "metrics",
     payload: {
       total_trades: 4,
@@ -124,4 +134,42 @@ describe("dashboard API proxy", () => {
       expect(await response.json()).toEqual(payload);
     }
   );
+
+  it("proxies health without attaching X-API-Key", async () => {
+    delete process.env.DASHBOARD_API_KEY;
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: "ok",
+          timestamp: "2026-05-12T12:00:00.000Z",
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/health"),
+      { params: Promise.resolve({ path: ["health"] }) }
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [upstreamUrl, requestInit] = fetchMock.mock.calls[0];
+    const headers = requestInit?.headers as Headers;
+
+    expect(String(upstreamUrl)).toBe("https://backend.example/api/health");
+    expect(headers.get("X-API-Key")).toBeNull();
+    expect(await response.json()).toEqual({
+      status: "ok",
+      timestamp: "2026-05-12T12:00:00.000Z",
+    });
+  });
 });

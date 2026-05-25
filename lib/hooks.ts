@@ -9,6 +9,7 @@ import type {
   Metrics,
   EquityCurveResponse,
   DailyPnlResponse,
+  RuntimeStatusResponse,
 } from "./types";
 
 export function useOverview() {
@@ -64,6 +65,15 @@ export function useHeartbeat() {
   return useQuery<{ status: string; timestamp: string }>({
     queryKey: ["heartbeat"],
     queryFn: () => apiFetch<{ status: string; timestamp: string }>("health"),
+    refetchInterval: 10_000,
+    retry: 0,
+  });
+}
+
+export function useRuntimeStatus() {
+  return useQuery<RuntimeStatusResponse>({
+    queryKey: ["runtime-status"],
+    queryFn: () => apiFetch<RuntimeStatusResponse>("runtime/status"),
     refetchInterval: 10_000,
     retry: 0,
   });

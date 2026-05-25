@@ -8,6 +8,18 @@ export type ProfitFactorState =
   | "unbounded"
   | "unavailable";
 
+export type RuntimeStatusState = "running" | "stopped" | "unknown";
+
+export type RuntimeMode = "paper" | "live" | null;
+
+export interface RuntimeStatusResponse {
+  status: RuntimeStatusState;
+  mode: RuntimeMode;
+  service: string;
+  active_state: string;
+  timestamp: string;
+}
+
 // ─── Overview ──────────────────────────────────────────
 export interface Overview {
   balance_usd: number | null;

@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 const ALLOWED_PATHS = new Set([
   "diagnostics/collectors",
   "overview",
+  "runtime/status",
   "trades/active",
   "trades/history",
   "trades/export",
