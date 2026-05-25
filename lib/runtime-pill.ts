@@ -68,7 +68,7 @@ export function resolveRuntimePill({
     return {
       label: "STOPPED",
       tone: "stopped",
-      animate: false,
+      animate: true,
     };
   }
 
