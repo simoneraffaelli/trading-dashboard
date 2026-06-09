@@ -35,7 +35,7 @@ export default function StatsRow() {
       label: "Win Rate",
       value: metrics ? metrics.win_rate * 100 : undefined,
       suffix: "%",
-      decimals: 1,
+      decimals: 2,
       hint: metrics
         ? `${(metrics.long_win_rate * 100).toFixed(2)}% long / ${(metrics.short_win_rate * 100).toFixed(2)}% short`
         : undefined,
