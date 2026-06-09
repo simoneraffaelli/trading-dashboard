@@ -37,7 +37,7 @@ export default function StatsRow() {
       suffix: "%",
       decimals: 1,
       hint: metrics
-        ? `${metrics.long_win_rate * 100}% long / ${metrics.short_win_rate * 100}% short`
+        ? `${(metrics.long_win_rate * 100).toFixed(2)}% long / ${(metrics.short_win_rate * 100).toFixed(2)}% short`
         : undefined,
     },
     {
